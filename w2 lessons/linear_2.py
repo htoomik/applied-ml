@@ -73,6 +73,7 @@ def pytorch_lr_fit(x, y, learning_rate, epochs):
 def main():
     scaler = MinMaxScaler()
     columns = ['bmi', 'ltg', 'y']
+    feature_count = len(columns[0:-1])
     
     # training data
     training_raw = pd.read_csv('..\\data\\training.csv')
@@ -80,8 +81,8 @@ def main():
     # fit_transform: fits the scaler to the data set, and transforms data set
     training_scaled = scaler.fit_transform(training_raw[columns])
 
-    training_features = np.array(training_scaled[:, 0:2])
-    training_response = np.array(training_scaled[:, 2])
+    training_features = np.array(training_scaled[:, 0:feature_count])
+    training_response = np.array(training_scaled[:, feature_count])
 
     # train model
     model = pytorch_lr_fit(training_features, training_response, 0.1, 1000)
@@ -92,8 +93,8 @@ def main():
     # transform: reuses already-fitted scaler, so that test data is scaled
     # using the same scale as the training data, for apples-to-apples comparison
     test_scaled = scaler.transform(test_raw[columns])
-    test_features = test_scaled[:, 0:2]
-    test_response = test_scaled[:, 2]
+    test_features = test_scaled[:, 0:feature_count]
+    test_response = test_scaled[:, feature_count]
 
     # test model
     test_input = Variable(torch.from_numpy(test_features).float())
