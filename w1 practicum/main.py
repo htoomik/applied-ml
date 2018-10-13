@@ -39,6 +39,6 @@ training_df.to_csv('..\\data\\training.csv')
 test_df.to_csv('..\\data\\test.csv')
 holdout_df.to_csv('..\\data\\holdout.csv')
 
-print('test:\r\n', test_df.describe())
 print('training:\r\n', training_df.describe())
+print('test:\r\n', test_df.describe())
 print('holdout:\r\n', holdout_df.describe())
