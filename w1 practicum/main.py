@@ -35,6 +35,10 @@ remainder_df = diabetes_df.drop(test_df.index)
 holdout_df = remainder_df.sample(frac = 0.2)
 training_df = remainder_df.drop(holdout_df.index)
 
+training_df.to_csv('..\\data\\training.csv')
+test_df.to_csv('..\\data\\test.csv')
+holdout_df.to_csv('..\\data\\holdout.csv')
+
 print('test:\r\n', test_df.describe())
 print('training:\r\n', training_df.describe())
 print('holdout:\r\n', holdout_df.describe())
