@@ -24,7 +24,11 @@ class PyTorchLRModel(torch.nn.Module):
 # Trains a model
 # x: features - numpy array
 # y: response - numpy array
-def pytorch_lr_fit(x, y, learning_rate, epochs):
+# learning_rate: learning rate for SGD
+# epochs - number of epochs for SGD loop
+# lambda1 - L1 regularization rate
+# lambda2 - L2 regularization rate
+def pytorch_lr_fit(x, y, learning_rate, epochs, lambda1, lambda2):
 
     # number of dimensions in incoming data
     input_dimension = x.ndim
@@ -49,10 +53,11 @@ def pytorch_lr_fit(x, y, learning_rate, epochs):
     # We will use Mean Square Error as loss function
     loss_func = torch.nn.MSELoss()
 
-    optimizer = torch.optim.SGD(model.parameters(), lr = learning_rate)
+    # L2 regularization is built in
+    optimizer = torch.optim.SGD(model.parameters(), lr = learning_rate, weight_decay = lambda2)
     
     for epoch in range(epochs):
-        features = Variable(torch.from_numpy(x).float())
+        features = Variable(torch.from_numpy(x).float(), requires_grad = True)
         response = Variable(torch.from_numpy(y).float())
 
         # the optimizer remembers gradients from the previous iteration - reset
@@ -61,6 +66,14 @@ def pytorch_lr_fit(x, y, learning_rate, epochs):
         predictions = model.forward(features)
 
         loss = loss_func(predictions, response)
+
+        # L1 regularization needs to be done "manually"
+        if lambda1 > 0.0:
+            # view(-1) flattens each parameter
+            # cat concatenates into a single list/array/whatever
+            parameters = torch.cat([x.view(-1) for x in model.linear.parameters()])
+            l1_regularization = lambda1 * torch.norm(parameters, 1)
+            loss += l1_regularization
 
         # calculate the derivative/gradient for each feature
         loss.backward()
@@ -72,7 +85,7 @@ def pytorch_lr_fit(x, y, learning_rate, epochs):
 
 def main():
     scaler = MinMaxScaler()
-    columns = ['bmi', 'ltg', 'y']
+    columns = ['bmi', 'map', 'ldl', 'hdl', 'tch', 'glu', 'ltg', 'y']
     feature_count = len(columns[0:-1])
     
     # training data
@@ -85,7 +98,10 @@ def main():
     training_response = np.array(training_scaled[:, feature_count])
 
     # train model
-    model = pytorch_lr_fit(training_features, training_response, 0.1, 1000)
+    model_linear = pytorch_lr_fit(training_features, training_response, 0.1, 1000, 0.0, 0.0)
+    model_lasso = pytorch_lr_fit(training_features, training_response, 0.1, 1000, 0.001, 0.0)
+    model_ridge = pytorch_lr_fit(training_features, training_response, 0.1, 1000, 0.0, 0.001)
+    model_enet = pytorch_lr_fit(training_features, training_response, 0.1, 1000, 0.001, 0.001)
 
     # testing data
     test_raw = pd.read_csv('..\\data\\test.csv')
@@ -96,13 +112,24 @@ def main():
     test_features = test_scaled[:, 0:feature_count]
     test_response = test_scaled[:, feature_count]
 
-    # test model
     test_input = Variable(torch.from_numpy(test_features).float())
-    predictions = model(test_input)
+
+    # test all the models
+    predictions_linear = model_linear(test_input)
+    predictions_lasso = model_lasso(test_input)
+    predictions_ridge = model_ridge(test_input)
+    predictions_enet = model_enet(test_input)
 
     # evaluate test results
-    rmse = math.sqrt(mean_squared_error(predictions.data.numpy(), test_response))
-    print('RMSE: %0.4f'% rmse)
+    rmse_linear = math.sqrt(mean_squared_error(predictions_linear.data.numpy(), test_response))
+    rmse_lasso = math.sqrt(mean_squared_error(predictions_lasso.data.numpy(), test_response))
+    rmse_ridge = math.sqrt(mean_squared_error(predictions_ridge.data.numpy(), test_response))
+    rmse_enet = math.sqrt(mean_squared_error(predictions_enet.data.numpy(), test_response))
+    
+    print('RMSE no regularization: %0.4f'% rmse_linear)
+    print('RMSE lasso: %0.4f'% rmse_lasso)
+    print('RMSE ridge: %0.4f'% rmse_ridge)
+    print('RMSE elastic net: %0.4f'% rmse_enet)
     
 
 if __name__ == '__main__':
