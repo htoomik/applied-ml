@@ -52,7 +52,7 @@ def pytorch_lr_fit(x, y, learning_rate, epochs):
     optimizer = torch.optim.SGD(model.parameters(), lr = learning_rate)
     
     for epoch in range(epochs):
-        features = Variable(torch.from_numpy(x).float())
+        features = Variable(torch.from_numpy(x).float(), requires_grad = True)
         response = Variable(torch.from_numpy(y).float())
 
         # the optimizer remembers gradients from the previous iteration - reset
