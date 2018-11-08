@@ -1,0 +1,9 @@
+to run docker:
+
+docker run -v "c:/code/applied ml/practice/w4":/code -e DISPLAY=$DISPLAY --interactive --tty sheercat/fbprophet
+
+to run the script:
+
+>>> import os
+>>> os.chdir("/code")
+>>> exec(open("/code/w4 practicum.py").read())
